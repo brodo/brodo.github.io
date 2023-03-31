@@ -8,7 +8,7 @@ theme = 'terminal'
 [languages]
   [languages.en]
     languageName = "English"
-    title = "Julian Dax'"
+    title = "Julian Dax"
     subtitle = "Software Engineer and Programming Language Enthusiast"
     owner = ""
     keywords = ""
