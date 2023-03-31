@@ -16,7 +16,7 @@ color = "" #color from the theme settings
 ## TL/DR
 
 Finding out if an object is an error is unreliable and full of edge-cases. A modern,
-[isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) way to
+[isomorphic](https://en.wikipedia.org/wiki/Isomorphic_JavaScript) but still not perfect way to
 do it is the following[^1]:
 
 ```JavaScript
