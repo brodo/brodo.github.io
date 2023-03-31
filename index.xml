@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Julian Dax</title><link>https://juliand.ax/</link><description>Recent content on Julian Dax</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 31 Mar 2023 19:16:51 +0200</lastBuildDate><atom:link href="https://juliand.ax/index.xml" rel="self" type="application/rss+xml"/><item><title>How to detect Errors in JavaScript</title><link>https://juliand.ax/posts/detect-js-errors/</link><pubDate>Fri, 31 Mar 2023 19:16:51 +0200</pubDate><guid>https://juliand.ax/posts/detect-js-errors/</guid><description>TL/DR Finding out if an object is an error is unreliable and full of edge-cases. A modern, isomorphic way to do it is the following1:
+function isError (object) { return object instanceof Error || ( object?.constructor?.name === &amp;#39;Error&amp;#39; || object?.constructor?.name === &amp;#39;DOMException&amp;#39; ) } Many custom error classes in the JavaScript ecosystem are hard to detect because creating custom error classes used to be hard before the introduction of the class syntax.</description><content>&lt;h2 id="tldr">TL/DR&lt;/h2>
+&lt;p>Finding out if an object is an error is unreliable and full of edge-cases. A modern,
+&lt;a href="https://en.wikipedia.org/wiki/Isomorphic_JavaScript">isomorphic&lt;/a> way to
+do it is the following&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">isError&lt;/span> (&lt;span style="color:#a6e22e">object&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">object&lt;/span> &lt;span style="color:#66d9ef">instanceof&lt;/span> Error &lt;span style="color:#f92672">||&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">object&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">constructor&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#39;Error&amp;#39;&lt;/span> &lt;span style="color:#f92672">||&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">object&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">constructor&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#39;DOMException&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Many custom error classes in the JavaScript ecosystem are hard to detect
+because creating custom error classes used to be hard before the introduction
+of the &lt;code>class&lt;/code> syntax.&lt;/p>
+&lt;h2 id="part-one-wtf-is-an-error-anyway">Part One: WTF is an error anyway?&lt;/h2>
+&lt;p>In JavaScript different things can be meant by &amp;ldquo;error&amp;rdquo;. This part
+discusses the different kinds of errors.&lt;/p>
+&lt;h3 id="native-errors">Native Errors&lt;/h3>
+&lt;p>The &lt;a href="https://tc39.es/ecma262/#sec-error-objects">JavaScript
+specification&lt;/a> defines a
+number of &amp;ldquo;Native Errors&amp;rdquo; which are all &lt;code>instanceof Error&lt;/code>. According to
+the specification, these errors are marked in a way that is not
+accessible from JavaScript itself&lt;sup id="fnref:2">&lt;a href="#fn:2" class="footnote-ref" role="doc-noteref">2&lt;/a>&lt;/sup>. However, in practice they can be
+&lt;a href="#is-native-error">detected reliably&lt;/a> in Node.js and &lt;a href="#to-string">unreliably in the
+browser&lt;/a>.&lt;/p>
+&lt;h3 id="domexceptions">DOMExceptions&lt;/h3>
+&lt;p>&lt;code>DOMException&lt;/code>s&lt;sup id="fnref:3">&lt;a href="#fn:3" class="footnote-ref" role="doc-noteref">3&lt;/a>&lt;/sup> are errors that are thrown when an error
+happens in one of the web APIs. It is defined in the &lt;a href="https://www.w3.org/TR/DOM-Level-3-Core/core.html#ID-17189187">DOM
+specification&lt;/a>.
+DOMExceptions are no native errors and are not &lt;code>instanceof Error&lt;/code>.
+The &lt;code>DOMException&lt;/code> class does exist both in the browser and in Node.js.&lt;/p>
+&lt;h3 id="instances-of-error">Instances of &lt;code>Error&lt;/code>&lt;/h3>
+&lt;p>There are a lot of custom errors defined in popular libraries that are
+not native but still instances of &lt;code>Error&lt;/code>. This happenes if the
+prototype of the error object is manually set to &lt;code>Error.prototype&lt;/code>.&lt;/p>
+&lt;h3 id="objects-with-a-constructor-named-error">Objects with a constructor named &amp;ldquo;Error&amp;rdquo;&lt;/h3>
+&lt;p>If an object crosses a &lt;a href="https://tc39.es/ecma262/#realm">realm boundary&lt;/a>
+&lt;sup id="fnref:4">&lt;a href="#fn:4" class="footnote-ref" role="doc-noteref">4&lt;/a>&lt;/sup>, it is not instance
+of anything in the current realm. However, the name of the constructor
+is still &lt;code>&amp;quot;Error&amp;quot;&lt;/code>.&lt;/p>
+&lt;h3 id="objects-with-the-string-properties-name-and-message">Objects with the &lt;code>string&lt;/code> properties &lt;code>name&lt;/code> and &lt;code>message&lt;/code>&lt;/h3>
+&lt;p>For TypeScript, an &lt;code>Error&lt;/code> is any object that conforms to &lt;a href="https://github.com/microsoft/TypeScript/blob/4b6fb95f040c5c81743e19a56df8fa99bf3d139f/lib/lib.es5.d.ts#L1052">this
+interface&lt;/a>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-TypeScript" data-lang="TypeScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">interface&lt;/span> Error {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">name&lt;/span>: &lt;span style="color:#66d9ef">string&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">message&lt;/span>: &lt;span style="color:#66d9ef">string&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">stack?&lt;/span>: &lt;span style="color:#66d9ef">string&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>The optional &lt;code>stack&lt;/code> property is not defined in the standard but present
+in every modern JavaScript engine.&lt;/p>
+&lt;h2 id="part-two-how-to-check-for-errors">Part Two: How to Check for Errors&lt;/h2>
+&lt;h3 id="detecting-native-errors">Detecting Native Errors&lt;/h3>
+&lt;p>Clever people came up with a way to check for native errors by using the
+&lt;code>Object.prototype.toString()&lt;/code> method:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#66d9ef">new&lt;/span> Error()) &lt;span style="color:#75715e">// returns &amp;#39;[object Error]&amp;#39;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>({}) &lt;span style="color:#75715e">// returns &amp;#39;[object Object]&amp;#39;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Objects marked as errors are &lt;em>used to be&lt;/em> the only ones for which
+&lt;code>Object.prototype.toString.call()&lt;/code> would return &lt;code>[object Error]&lt;/code> instead
+of &lt;code>[object Object]&lt;/code>. However, this is no longer the case since the
+introduction of
+&lt;a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toStringTag">&lt;code>Symbol.toStringTag&lt;/code>&lt;/a>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">fakeError&lt;/span> &lt;span style="color:#f92672">=&lt;/span> {[&lt;span style="color:#a6e22e">Symbol&lt;/span>.&lt;span style="color:#a6e22e">toStringTag&lt;/span>]&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#e6db74">&amp;#39;Error&amp;#39;&lt;/span>};
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#a6e22e">fakeError&lt;/span>) &lt;span style="color:#75715e">// returns &amp;#39;[object Error]&amp;#39;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Therefore, there can be &lt;em>false positives&lt;/em> when checking with
+&lt;code>Object.prototype.toString.call()&lt;/code>.&lt;/p>
+&lt;p>There are two other reasons for not using this method: firstly, using
+&lt;code>Object.prototype.toString.call()&lt;/code> for type testing is discouraged &lt;a href="https://tc39.es/ecma262/#sec-object.prototype.tostring">in
+the
+specification&lt;/a>.
+And secondly, many custom errors and &lt;code>DOMException&lt;/code> will not return
+&lt;code>[object Error]&lt;/code> when checked like this:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// I&amp;#39;m using AxiosError as an example for an error that is not a native error.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// I don&amp;#39;t want to pick on Axios; this is very common.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">import&lt;/span> {&lt;span style="color:#a6e22e">AxiosError&lt;/span>} &lt;span style="color:#a6e22e">from&lt;/span> &lt;span style="color:#e6db74">&amp;#34;axios&amp;#34;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">AxiosError&lt;/span>()); &lt;span style="color:#75715e">// returns &amp;#39;[object Object]&amp;#39;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">DOMException&lt;/span>()); &lt;span style="color:#75715e">// returns &amp;#39;[object DOMException]&amp;#39;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Thus, &lt;em>False negatives&lt;/em> will also happen quite regularly when using this
+method.&lt;/p>
+&lt;p>Because of all these problems, the Node.js developers decided to expose
+the V8-internal &lt;code>IsNativeError()&lt;/code> function as
+&lt;a href="https://nodejs.org/api/util.html#utiltypesisnativeerrorvalue">&lt;code>util.types.isNativeError()&lt;/code>&lt;/a>.
+This gives you a reliable way to check if a value is marked as an error.
+However, since many custom error values are not marked, this way of
+checking will still produce many false negatives.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">util&lt;/span>.&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">isNativeError&lt;/span>({[&lt;span style="color:#a6e22e">Symbol&lt;/span>.&lt;span style="color:#a6e22e">toStringTag&lt;/span>]&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#e6db74">&amp;#39;Error&amp;#39;&lt;/span>}) &lt;span style="color:#75715e">// returns false
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#a6e22e">util&lt;/span>.&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">isNativeError&lt;/span>(&lt;span style="color:#66d9ef">new&lt;/span> Error()) &lt;span style="color:#75715e">// returns true
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;strong>I recommend not checking if an error is native. There are too many
+false negatives and cross-realm checking can be done using constructor
+names.&lt;/strong>&lt;/p>
+&lt;h3 id="detecting-error-instances">Detecting &lt;code>Error&lt;/code> instances&lt;/h3>
+&lt;p>Another way of checking if something is an error is using the
+&lt;code>instanceof&lt;/code> operator. It is quite common for errors to be
+&lt;code>instanceof Error&lt;/code> but not native, so this will catch more errors than
+the methods described above. It also finds &lt;code>DOMException&lt;/code>s as they are also
+&lt;code>instanceof Error&lt;/code>. It is also faster than most other methods as &lt;code>instanceof&lt;/code>
+is quicker than property access. However, as already mentioned, this does
+not work across realms:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>(&lt;span style="color:#66d9ef">new&lt;/span> Error()) &lt;span style="color:#66d9ef">instanceof&lt;/span> Error; &lt;span style="color:#75715e">// returns true
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>(&lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">DOMException&lt;/span>()) &lt;span style="color:#66d9ef">instanceof&lt;/span> Error; &lt;span style="color:#75715e">// returns true
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">context&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">vm&lt;/span>.&lt;span style="color:#a6e22e">createContext&lt;/span>({});
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">myError&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">vm&lt;/span>.&lt;span style="color:#a6e22e">runInContext&lt;/span>(&lt;span style="color:#e6db74">&amp;#39;new Error()&amp;#39;&lt;/span>, &lt;span style="color:#a6e22e">context&lt;/span>); &lt;span style="color:#75715e">// creates an error in a different realm
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#a6e22e">myError&lt;/span> &lt;span style="color:#66d9ef">instanceof&lt;/span> Error; &lt;span style="color:#75715e">// returns false
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#a6e22e">util&lt;/span>.&lt;span style="color:#a6e22e">types&lt;/span>.&lt;span style="color:#a6e22e">isNativeError&lt;/span>(&lt;span style="color:#a6e22e">myError&lt;/span>); &lt;span style="color:#75715e">// returns true
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>To detect errors from other realms we can check the constructor name.
+This may lead to false positives though:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>(&lt;span style="color:#66d9ef">new&lt;/span> Error()) &lt;span style="color:#66d9ef">instanceof&lt;/span> Error; &lt;span style="color:#75715e">// returns true
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">context&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">vm&lt;/span>.&lt;span style="color:#a6e22e">createContext&lt;/span>({});
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">myError&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">vm&lt;/span>.&lt;span style="color:#a6e22e">runInContext&lt;/span>(&lt;span style="color:#e6db74">&amp;#39;new Error()&amp;#39;&lt;/span>, &lt;span style="color:#a6e22e">context&lt;/span>); &lt;span style="color:#75715e">// creates an error in a different realm
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#a6e22e">myError&lt;/span>.&lt;span style="color:#a6e22e">constructor&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Error&amp;#34;&lt;/span>; &lt;span style="color:#75715e">// returns true
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>{&lt;span style="color:#a6e22e">constructor&lt;/span>&lt;span style="color:#f92672">:&lt;/span> {&lt;span style="color:#a6e22e">name&lt;/span>&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Error&amp;#34;&lt;/span>}}.&lt;span style="color:#a6e22e">constructor&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#34;Error&amp;#34;&lt;/span>; &lt;span style="color:#75715e">// returns true
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>However, the example for the false positive is contrived and if people
+really want to fake an error, they probably have reasons for it.&lt;/p>
+&lt;h3 id="checking-for-message-and-name">Checking for &lt;code>message&lt;/code> and &lt;code>name&lt;/code>&lt;/h3>
+&lt;p>If TypeScript&amp;rsquo;s error definition is good enough for you, this type guard
+will do the job:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-TypeScript" data-lang="TypeScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">isError&lt;/span>(&lt;span style="color:#a6e22e">e&lt;/span>: &lt;span style="color:#66d9ef">unknown&lt;/span>)&lt;span style="color:#f92672">:&lt;/span> &lt;span style="color:#a6e22e">e&lt;/span> &lt;span style="color:#66d9ef">is&lt;/span> Error {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">typeof&lt;/span> &lt;span style="color:#a6e22e">e&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#34;object&amp;#34;&lt;/span> &lt;span style="color:#f92672">&amp;amp;&amp;amp;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> (&lt;span style="color:#66d9ef">typeof&lt;/span> &lt;span style="color:#a6e22e">e&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;name&amp;#34;&lt;/span>] &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#34;string&amp;#34;&lt;/span>) &lt;span style="color:#f92672">&amp;amp;&amp;amp;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> (&lt;span style="color:#66d9ef">typeof&lt;/span> &lt;span style="color:#a6e22e">e&lt;/span>[&lt;span style="color:#e6db74">&amp;#34;message&amp;#34;&lt;/span>] &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#34;string&amp;#34;&lt;/span>)
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This is a pretty loose definition however, and one can easily imagine
+real-world examples for objects with these properties that are not
+errors. So why not also check for &lt;code>stack&lt;/code>? The problem with that is that the string representation of that stack
+trace is created lazily when it is accessed. So checking for the &lt;code>stack&lt;/code> attribute to find out if
+something is an &lt;code>Error&lt;/code> is about 8.5 times slower&lt;sup id="fnref:5">&lt;a href="#fn:5" class="footnote-ref" role="doc-noteref">5&lt;/a>&lt;/sup> than just checking &lt;code>name&lt;/code> and &lt;code>message&lt;/code>.&lt;/p>
+&lt;h3 id="summary-table">Summary Table&lt;/h3>
+&lt;p>In the following table, more ✓s are always better:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Method&lt;/th>
+&lt;th>No False Positives&lt;/th>
+&lt;th>No False Negatives&lt;/th>
+&lt;th>Is Isomorphic&lt;/th>
+&lt;th>Not Deprecated&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>Object.prototype.toString.call()&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>util.types.isNativeError()&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>instanceof Error&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>X.constructor.name === &amp;ldquo;Error&amp;rdquo;&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>checking for message and name&lt;/td>
+&lt;td>⤬&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;td>✓&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="using-combinations-of-several-checks">Using Combinations of several checks&lt;/h2>
+&lt;p>&lt;em>Using combinations of the methods described above is generally the way
+to go.&lt;/em> Node.js itself uses &lt;a href="https://github.com/nodejs/node/blob/3c0131a4190a88211780dcc07dbaf84c8de97f34/lib/internal/util.js#L95">this
+function&lt;/a>
+for checking if something is an &lt;code>Error&lt;/code> internally:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">isError&lt;/span>(&lt;span style="color:#a6e22e">e&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// An error could be an instance of Error while not being a native error
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#75715e">// or could be from a different realm and not be instance of Error but still
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#75715e">// be a native error.
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">isNativeError&lt;/span>(&lt;span style="color:#a6e22e">e&lt;/span>) &lt;span style="color:#f92672">||&lt;/span> &lt;span style="color:#a6e22e">e&lt;/span> &lt;span style="color:#66d9ef">instanceof&lt;/span> Error;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>While this is better than using only one of the methods, it still can
+produce false negatives, if the error was created in another realm and
+is not a native error:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">context&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">vm&lt;/span>.&lt;span style="color:#a6e22e">createContext&lt;/span>({});
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">myError&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">vm&lt;/span>.&lt;span style="color:#a6e22e">runInContext&lt;/span>(&lt;span style="color:#e6db74">&amp;#39;new AxiosError()&amp;#39;&lt;/span>, &lt;span style="color:#a6e22e">context&lt;/span>); &lt;span style="color:#75715e">// creates an error in a different realm
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#a6e22e">isError&lt;/span>(&lt;span style="color:#a6e22e">myError&lt;/span>); &lt;span style="color:#75715e">// returns false
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>Node.js&amp;rsquo;s deprecated
+&lt;a href="https://nodejs.org/api/util.html#utiliserrorobject">&lt;code>util.isError()&lt;/code>&lt;/a>
+function uses a combination of &lt;code>instanceof&lt;/code> and
+&lt;code>Object.prototype.toString.call()&lt;/code>. This makes it deprecated but
+isomorphic.&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">isError&lt;/span>(&lt;span style="color:#a6e22e">e&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#a6e22e">e&lt;/span>) &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#39;[object Error]&amp;#39;&lt;/span> &lt;span style="color:#f92672">||&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">e&lt;/span> &lt;span style="color:#66d9ef">instanceof&lt;/span> Error;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>And finally, as already mentioned above, undici uses &lt;code>instanceof&lt;/code> and
+constructor names. This makes it work across realms and does not use
+Node.js-only functions. It will also produce less false positives than
+just checking for the &lt;code>name&lt;/code> and &lt;code>message&lt;/code> properties. It is also fast
+because the &lt;code>||&lt;/code> short-circuits it to an &lt;code>instanceof&lt;/code> test in many cases:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">isError&lt;/span> (&lt;span style="color:#a6e22e">object&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">object&lt;/span> &lt;span style="color:#66d9ef">instanceof&lt;/span> Error &lt;span style="color:#f92672">||&lt;/span> (
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">object&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">constructor&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#39;Error&amp;#39;&lt;/span> &lt;span style="color:#f92672">||&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">object&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">constructor&lt;/span>&lt;span style="color:#f92672">?&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#e6db74">&amp;#39;DOMException&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> )
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>This code is taken from
+&lt;a href="https://github.com/nodejs/undici/blob/4885b11dd60b4d1a785c4e5a519ad87920549d1c/lib/fetch/util.js#L75">undici&lt;/a>.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:2">
+&lt;p>An &lt;code>[[ErrorData]]&lt;/code> &lt;a href="https://tc39.es/ecma262/#sec-object-internal-methods-and-internal-slots">internal
+slot&lt;/a>
+is used for this.&amp;#160;&lt;a href="#fnref:2" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:3">
+&lt;p>&lt;code>DOMException&lt;/code>s don&amp;rsquo;t fit into the JavaScript naming scheme for errors. In JavaScript an exception is what happens if an
+error is thrown.&amp;#160;&lt;a href="#fnref:3" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:4">
+&lt;p>A realm is a JavaScript execution context which has its own global environment. If an error comes from another realm, its prototype points
+to the &lt;code>Error&lt;/code> prototype of the realm it was created in. Thus,&lt;code>instanceof Error&lt;/code> will return &lt;code>false&lt;/code>.&amp;#160;&lt;a href="#fnref:4" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li id="fn:5">
+&lt;p>I did some micro benchmarking to find this out. The exact number may depend on the use-case but it is &lt;strong>a lot&lt;/strong> slower in any case.&amp;#160;&lt;a href="#fnref:5" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>Profile</title><link>https://juliand.ax/profile/</link><pubDate>Fri, 31 Mar 2023 19:01:34 +0200</pubDate><guid>https://juliand.ax/profile/</guid><description>I am a software engineer working for ifm workin with Node.js. My primary interest are programming languages, functional programming and software engineering.</description><content>&lt;p>I am a software engineer working for &lt;a href="https://ifm.com">ifm&lt;/a> workin with &lt;a href="https://nodejs.org">Node.js&lt;/a>.
+My primary interest are programming languages, functional programming and software engineering.&lt;/p></content></item><item><title>Showcase</title><link>https://juliand.ax/showcase/</link><pubDate>Fri, 31 Mar 2023 19:01:34 +0200</pubDate><guid>https://juliand.ax/showcase/</guid><description>json_env json_env is dotenv, but with JSON. It loads environment variables from JSON files (.env.json per default) and starts a subprocess with them. Storing configuration in the environment separate from code is based on The Twelve-Factor App methodology. It is also my first Rust project.</description><content>&lt;h2 id="json_env">json_env&lt;/h2>
+&lt;p>&lt;a href="https://github.com/brodo/json_env">json_env&lt;/a> is &lt;a href="https://github.com/motdotla/dotenv">dotenv&lt;/a>, but with JSON.
+It loads environment variables from JSON files (&lt;code>.env.json&lt;/code> per default) and starts a subprocess with them.
+Storing configuration in the environment separate from code is based on &lt;a href="http://12factor.net/config">The Twelve-Factor&lt;/a> App methodology.
+It is also my first Rust project.&lt;/p></content></item></channel></rss>
