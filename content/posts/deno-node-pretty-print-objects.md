@@ -1,5 +1,5 @@
 +++
-title = "Pretty Printing Objects in Javscript REPLs"
+title = "String Representations of Javascript Objects"
 date = "2023-04-01T00:35:30+02:00"
 author = "Julian Dax"
 authorTwitter = "" #do not include @
@@ -13,11 +13,41 @@ hideComments = false
 color = "" #color from the theme settings
 +++
 
-In the Node.js REPL, objects are converted to strings using the [`util.inspect()`](https://nodejs.org/dist/latest-v19.x/docs/api/util.html#utilinspectobject-options) function.
-In Deno, there is the equivalent [`Deno.inspect()`](https://deno.land/api@v1.32.1?s=Deno.inspect).
+## `toString()` and `Symbol.toStringTag`
+
+The default `Object.prototype.toString()` function is
+[defined to the specification](https://tc39.es/ecma262/multipage/fundamental-objects.html#sec-object.prototype.tostring)
+to return `[object X]` even for non-objects:
+
+```Javascript
+Object.prototype.toString.call(undefined) // returns "[object Undefined]"
+Object.prototype.toString.call(true) // returns "[object Boolean]"
+{}.toString() // returns "[object Object]"
+```
+
+`X` is a so-called 'string tag' and in newer versions of Javascipt, you can set it yourself:
+
+```Javascript
+{[Symbol.toStringTag]:"MyObject"}.toString() // returns "[object MyObject]"
+```
+
+But for objects, you can also just implement the complete `toString` function:
+
+```Javascript
+{toString: ()=> "My Cool Object!"}.toString() // returns "My Cool Object!"
+```
+
+**However, the `toString()` function is not used by `console.log()` or in the Node.js or Deno REPLs.**
+
+## `inspect()` is the real `toString()`
+
+In Node.js, objects are converted to strings using the [`util.inspect()`](https://nodejs.org/dist/latest-v19.x/docs/api/util.html#utilinspectobject-options) function.
+In Deno, there is the equivalent [`Deno.inspect()`](https://deno.land/api@v1.32.1?s=Deno.inspect). These methods are used
+both in the REPLs and when using `console.log()`.
 You can influence what these do by implementing a function with the symbol `nodejs.util.inspect.custom` and
 `Deno.customInspect` respectively. If you implement both, pretty printing works in both.
 Check out this example for a binary tree:
+
 
 ```Javascript
 export class Tree {
@@ -48,58 +78,26 @@ export class Tree {
     }
 }
 
-// Helper function to generate a balanced binary tree of a given depth
-export function createBalancedTree(depth) {
-    if (depth === 0) {
-        return null;
-    }
-    const value = Math.floor(Math.random() * 100);
-    const left = createBalancedTree(depth - 1);
-    const right = createBalancedTree(depth - 1);
-    return new Tree(value, left, right);
-}
-
 ```
-
 And here is a Deno session that uses it:
 
 ```
-> import {Tree, createBalancedTree} from "./Tree.js"
-let tree = createBalancedTree(5);
-undefined
 > tree
-└── 49
-    ├── 25
-    │   ├── 44
-    │   │   ├── 2
-    │   │   │   ├── 58
-    │   │   │   └── 84
-    │   │   └── 85
-    │   │       ├── 71
-    │   │       └── 25
-    │   └── 6
-    │       ├── 89
-    │       │   ├── 74
-    │       │   └── 23
-    │       └── 18
-    │           ├── 78
-    │           └── 29
-    └── 55
+└── 52
+    ├── 41
+    │   ├── 51
+    │   └── 44
+    └── 94
         ├── 54
-        │   ├── 79
-        │   │   ├── 36
-        │   │   └── 66
-        │   └── 14
-        │       ├── 69
-        │       └── 51
-        └── 81
-            ├── 58
-            │   ├── 1
-            │   └── 67
-            └── 29
-                ├── 93
-                └── 98
+        └── 36
+> console.log(tree);
+└── 52
+    ├── 41
+    │   ├── 51
+    │   └── 44
+    └── 94
+        ├── 54
+        └── 36
 ```
 
-
-Isn’t that beautiful?
+Isn’t that beautiful? Sadly there is no way to accomplish this in browsers.
