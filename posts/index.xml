@@ -1,6 +1,22 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Julian Dax</title><link>https://juliand.ax/posts/</link><description>Recent content in Posts on Julian Dax</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 01 Apr 2023 00:35:30 +0200</lastBuildDate><atom:link href="https://juliand.ax/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>Pretty Printing Objects in Javscript REPLs</title><link>https://juliand.ax/posts/deno-node-pretty-print-objects/</link><pubDate>Sat, 01 Apr 2023 00:35:30 +0200</pubDate><guid>https://juliand.ax/posts/deno-node-pretty-print-objects/</guid><description>In the Node.js REPL, objects are converted to strings using the util.inspect() function. In Deno, there is the equivalent Deno.inspect(). You can influence what these do by implementing a function with the symbol nodejs.util.inspect.custom and Deno.customInspect respectively. If you implement both, pretty printing works in both. Check out this example for a binary tree:
-export class Tree { constructor(value, left, right) { this.value = value; this.left = left; this.right = right; } [Symbol.</description><content>&lt;p>In the Node.js REPL, objects are converted to strings using the &lt;a href="https://nodejs.org/dist/latest-v19.x/docs/api/util.html#utilinspectobject-options">&lt;code>util.inspect()&lt;/code>&lt;/a> function.
-In Deno, there is the equivalent &lt;a href="https://deno.land/api@v1.32.1?s=Deno.inspect">&lt;code>Deno.inspect()&lt;/code>&lt;/a>.
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Posts on Julian Dax</title><link>https://juliand.ax/posts/</link><description>Recent content in Posts on Julian Dax</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 01 Apr 2023 00:35:30 +0200</lastBuildDate><atom:link href="https://juliand.ax/posts/index.xml" rel="self" type="application/rss+xml"/><item><title>String Representations of Javascript Objects</title><link>https://juliand.ax/posts/deno-node-pretty-print-objects/</link><pubDate>Sat, 01 Apr 2023 00:35:30 +0200</pubDate><guid>https://juliand.ax/posts/deno-node-pretty-print-objects/</guid><description>toString() and Symbol.toStringTag The default Object.prototype.toString() function is defined to the specification to return [object X] even for non-objects:
+Object.prototype.toString.call(undefined) // returns &amp;#34;[object Undefined]&amp;#34; Object.prototype.toString.call(true) // returns &amp;#34;[object Boolean]&amp;#34; {}.toString() // returns &amp;#34;[object Object]&amp;#34; X is a so-called &amp;lsquo;string tag&amp;rsquo; and in newer versions of Javascipt, you can set it yourself:
+{[Symbol.toStringTag]:&amp;#34;MyObject&amp;#34;}.toString() // returns &amp;#34;[object MyObject]&amp;#34; But for objects, you can also just implement the complete toString function:
+{toString: ()=&amp;gt; &amp;#34;My Cool Object!</description><content>&lt;h2 id="tostring-and-symboltostringtag">&lt;code>toString()&lt;/code> and &lt;code>Symbol.toStringTag&lt;/code>&lt;/h2>
+&lt;p>The default &lt;code>Object.prototype.toString()&lt;/code> function is
+&lt;a href="https://tc39.es/ecma262/multipage/fundamental-objects.html#sec-object.prototype.tostring">defined to the specification&lt;/a>
+to return &lt;code>[object X]&lt;/code> even for non-objects:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Javascript" data-lang="Javascript">&lt;span style="display:flex;">&lt;span>Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#66d9ef">undefined&lt;/span>) &lt;span style="color:#75715e">// returns &amp;#34;[object Undefined]&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>Object.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">toString&lt;/span>.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#66d9ef">true&lt;/span>) &lt;span style="color:#75715e">// returns &amp;#34;[object Boolean]&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>{}.&lt;span style="color:#a6e22e">toString&lt;/span>() &lt;span style="color:#75715e">// returns &amp;#34;[object Object]&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;code>X&lt;/code> is a so-called &amp;lsquo;string tag&amp;rsquo; and in newer versions of Javascipt, you can set it yourself:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Javascript" data-lang="Javascript">&lt;span style="display:flex;">&lt;span>{[&lt;span style="color:#a6e22e">Symbol&lt;/span>.&lt;span style="color:#a6e22e">toStringTag&lt;/span>]&lt;span style="color:#f92672">:&lt;/span>&lt;span style="color:#e6db74">&amp;#34;MyObject&amp;#34;&lt;/span>}.&lt;span style="color:#a6e22e">toString&lt;/span>() &lt;span style="color:#75715e">// returns &amp;#34;[object MyObject]&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>But for objects, you can also just implement the complete &lt;code>toString&lt;/code> function:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Javascript" data-lang="Javascript">&lt;span style="display:flex;">&lt;span>{&lt;span style="color:#a6e22e">toString&lt;/span>&lt;span style="color:#f92672">:&lt;/span> ()=&amp;gt; &lt;span style="color:#e6db74">&amp;#34;My Cool Object!&amp;#34;&lt;/span>}.&lt;span style="color:#a6e22e">toString&lt;/span>() &lt;span style="color:#75715e">// returns &amp;#34;My Cool Object!&amp;#34;
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>&lt;strong>However, the &lt;code>toString()&lt;/code> function is not used by &lt;code>console.log()&lt;/code> or in the Node.js or Deno REPLs.&lt;/strong>&lt;/p>
+&lt;h2 id="inspect-is-the-real-tostring">&lt;code>inspect()&lt;/code> is the real &lt;code>toString()&lt;/code>&lt;/h2>
+&lt;p>In Node.js, objects are converted to strings using the &lt;a href="https://nodejs.org/dist/latest-v19.x/docs/api/util.html#utilinspectobject-options">&lt;code>util.inspect()&lt;/code>&lt;/a> function.
+In Deno, there is the equivalent &lt;a href="https://deno.land/api@v1.32.1?s=Deno.inspect">&lt;code>Deno.inspect()&lt;/code>&lt;/a>. These methods are used
+both in the REPLs and when using &lt;code>console.log()&lt;/code>.
 You can influence what these do by implementing a function with the symbol &lt;code>nodejs.util.inspect.custom&lt;/code> and
 &lt;code>Deno.customInspect&lt;/code> respectively. If you implement both, pretty printing works in both.
 Check out this example for a binary tree:&lt;/p>
@@ -31,54 +47,24 @@ Check out this example for a binary tree:&lt;/p>
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#a6e22e">printNode&lt;/span>(&lt;span style="color:#66d9ef">this&lt;/span>).&lt;span style="color:#a6e22e">trim&lt;/span>();
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
 &lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Helper function to generate a balanced binary tree of a given depth
-&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">export&lt;/span> &lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">createBalancedTree&lt;/span>(&lt;span style="color:#a6e22e">depth&lt;/span>) {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">if&lt;/span> (&lt;span style="color:#a6e22e">depth&lt;/span> &lt;span style="color:#f92672">===&lt;/span> &lt;span style="color:#ae81ff">0&lt;/span>) {
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">null&lt;/span>;
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">value&lt;/span> &lt;span style="color:#f92672">=&lt;/span> Math.&lt;span style="color:#a6e22e">floor&lt;/span>(Math.&lt;span style="color:#a6e22e">random&lt;/span>() &lt;span style="color:#f92672">*&lt;/span> &lt;span style="color:#ae81ff">100&lt;/span>);
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">left&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">createBalancedTree&lt;/span>(&lt;span style="color:#a6e22e">depth&lt;/span> &lt;span style="color:#f92672">-&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>);
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">const&lt;/span> &lt;span style="color:#a6e22e">right&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">createBalancedTree&lt;/span>(&lt;span style="color:#a6e22e">depth&lt;/span> &lt;span style="color:#f92672">-&lt;/span> &lt;span style="color:#ae81ff">1&lt;/span>);
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">return&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">Tree&lt;/span>(&lt;span style="color:#a6e22e">value&lt;/span>, &lt;span style="color:#a6e22e">left&lt;/span>, &lt;span style="color:#a6e22e">right&lt;/span>);
-&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
 &lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>And here is a Deno session that uses it:&lt;/p>
-&lt;pre tabindex="0">&lt;code>&amp;gt; import {Tree, createBalancedTree} from &amp;#34;./Tree.js&amp;#34;
-let tree = createBalancedTree(5);
-undefined
-&amp;gt; tree
-└── 49
-├── 25
-│ ├── 44
-│ │ ├── 2
-│ │ │ ├── 58
-│ │ │ └── 84
-│ │ └── 85
-│ │ ├── 71
-│ │ └── 25
-│ └── 6
-│ ├── 89
-│ │ ├── 74
-│ │ └── 23
-│ └── 18
-│ ├── 78
-│ └── 29
-└── 55
+&lt;pre tabindex="0">&lt;code>&amp;gt; tree
+└── 52
+├── 41
+│ ├── 51
+│ └── 44
+└── 94
 ├── 54
-│ ├── 79
-│ │ ├── 36
-│ │ └── 66
-│ └── 14
-│ ├── 69
-│ └── 51
-└── 81
-├── 58
-│ ├── 1
-│ └── 67
-└── 29
-├── 93
-└── 98
-&lt;/code>&lt;/pre>&lt;p>Isn’t that beautiful?&lt;/p></content></item><item><title>How to detect Errors in JavaScript</title><link>https://juliand.ax/posts/detect-js-errors/</link><pubDate>Fri, 31 Mar 2023 19:16:51 +0200</pubDate><guid>https://juliand.ax/posts/detect-js-errors/</guid><description>TL/DR Finding out if an object is an error is unreliable and full of edge-cases. A modern, isomorphic but still not perfect way to do it is the following1:
+└── 36
+&amp;gt; console.log(tree);
+└── 52
+├── 41
+│ ├── 51
+│ └── 44
+└── 94
+├── 54
+└── 36
+&lt;/code>&lt;/pre>&lt;p>Isn’t that beautiful? Sadly there is no way to accomplish this in browsers.&lt;/p></content></item><item><title>How to detect Errors in JavaScript</title><link>https://juliand.ax/posts/detect-js-errors/</link><pubDate>Fri, 31 Mar 2023 19:16:51 +0200</pubDate><guid>https://juliand.ax/posts/detect-js-errors/</guid><description>TL/DR Finding out if an object is an error is unreliable and full of edge-cases. A modern, isomorphic but still not perfect way to do it is the following1:
 function isError (object) { return object instanceof Error || ( object?.constructor?.name === &amp;#39;Error&amp;#39; || object?.constructor?.name === &amp;#39;DOMException&amp;#39; ) } Many custom error classes in the JavaScript ecosystem are hard to detect because creating custom error classes used to be hard before the introduction of the class syntax.</description><content>&lt;h2 id="tldr">TL/DR&lt;/h2>
 &lt;p>Finding out if an object is an error is unreliable and full of edge-cases. A modern,
 &lt;a href="https://en.wikipedia.org/wiki/Isomorphic_JavaScript">isomorphic&lt;/a> but still not perfect way to
