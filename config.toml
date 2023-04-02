@@ -34,3 +34,9 @@ theme = 'terminal'
         identifier = "showcase"
         name = "Showcase"
         url = "/showcase"
+[params.twitter]
+  # set Twitter handles for Twitter cards
+  # see https://developer.twitter.com/en/docs/tweets/optimize-with-cards/guides/getting-started#card-and-content-attribution
+  # do not include @
+  creator = "jdax"
+  site = "jdax"
