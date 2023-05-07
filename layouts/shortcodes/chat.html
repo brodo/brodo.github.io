@@ -1,0 +1,11 @@
+<style>
+    .chat-inner > * {
+        margin-block-start: 0;
+    }
+</style>
+
+<div style="display: flex; gap: 1rem">
+    <div style="">{{.Get "person"}}:</div>
+    <div style="flex-grow: 1" class="chat-inner">{{ .Inner | markdownify }}</div>
+</div>
+<br></br>
