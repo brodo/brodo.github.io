@@ -1,7 +1,7 @@
 +++
 title = "Cargo Cult Code Generation"
 date = "2023-05-05T21:19:33+02:00"
-author = ""
+author = "Julian Dax"
 authorTwitter = "" #do not include @
 cover = ""
 tags = ["JavaScript", "ChatGPT", "Copilot", "Errors"]
