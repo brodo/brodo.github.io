@@ -1,4 +1,119 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>JavaScript on Julian Dax</title><link>https://juliand.ax/tags/javascript/</link><description>Recent content in JavaScript on Julian Dax</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Sat, 01 Apr 2023 00:35:30 +0200</lastBuildDate><atom:link href="https://juliand.ax/tags/javascript/index.xml" rel="self" type="application/rss+xml"/><item><title>String Representations of Javascript Objects</title><link>https://juliand.ax/posts/javascript-to-string/</link><pubDate>Sat, 01 Apr 2023 00:35:30 +0200</pubDate><guid>https://juliand.ax/posts/javascript-to-string/</guid><description>toString() and Symbol.toStringTag The default Object.prototype.toString() function is defined to the specification to return [object X] even for non-objects:
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>JavaScript on Julian Dax</title><link>https://juliand.ax/tags/javascript/</link><description>Recent content in JavaScript on Julian Dax</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><lastBuildDate>Fri, 05 May 2023 21:19:33 +0200</lastBuildDate><atom:link href="https://juliand.ax/tags/javascript/index.xml" rel="self" type="application/rss+xml"/><item><title>Cargo Cult Code Generation</title><link>https://juliand.ax/posts/cargo-cult-code-gen/</link><pubDate>Fri, 05 May 2023 21:19:33 +0200</pubDate><guid>https://juliand.ax/posts/cargo-cult-code-gen/</guid><description>Javascript Errors in the Wild Recently, I came across this code in the popular Axios library:
+function AxiosError(message, code, config, request, response) { Error.call(this); // some more code i&amp;#39;ve left out for brevity } What does Error.call(this) do, you might ask? Nothing! I&amp;rsquo;ve tried it out in Node versions back until 6, Spidermonkey and JavaScriptCore. None of them do anything to the this object of the Error constructor. Moreover, the specification says that you have to be able to call the Error constructor without new, so it makes sense to implement it that way.</description><content>&lt;h2 id="javascript-errors-in-the-wild">Javascript Errors in the Wild&lt;/h2>
+&lt;p>Recently, I came across this code in the popular &lt;a href="https://github.com/axios/axios/blob/21a5ad34c4a5956d81d338059ac0dd34a19ed094/lib/core/AxiosError.js">Axios library&lt;/a>:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-javascript" data-lang="javascript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">AxiosError&lt;/span>(&lt;span style="color:#a6e22e">message&lt;/span>, &lt;span style="color:#a6e22e">code&lt;/span>, &lt;span style="color:#a6e22e">config&lt;/span>, &lt;span style="color:#a6e22e">request&lt;/span>, &lt;span style="color:#a6e22e">response&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Error.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#66d9ef">this&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// some more code i&amp;#39;ve left out for brevity
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>What does &lt;code>Error.call(this)&lt;/code> do, you might ask? Nothing! I&amp;rsquo;ve tried it out in
+Node versions back until 6, Spidermonkey and JavaScriptCore. None of them do anything to the &lt;code>this&lt;/code> object of the
+&lt;code>Error&lt;/code> constructor. Moreover, &lt;a href="https://262.ecma-international.org/13.0/#sec-error-constructor">the specification&lt;/a>
+says that you have to be able to call the &lt;code>Error&lt;/code> constructor without &lt;code>new&lt;/code>, so it makes sense to implement it
+that way. Depending on how good you know Javascript Errors, you might assume that this call might:&lt;/p>
+&lt;ol>
+&lt;li>Turn &lt;code>this&lt;/code> into an &lt;code>instanceof Error&lt;/code> - It does not.&lt;/li>
+&lt;li>Turn &lt;code>this&lt;/code> into a &lt;a href="https://nodejs.org/dist/latest-v20.x/docs/api/util.html#utiltypesisnativeerrorvalue">native error&lt;/a> - It does not.&lt;/li>
+&lt;li>Add a &lt;code>stack&lt;/code> property to &lt;code>this&lt;/code> - It does not.&lt;/li>
+&lt;/ol>
+&lt;p>&lt;code>Error.call(this)&lt;/code> does absolutely nothing to &lt;code>this&lt;/code>. Zero, zilch, nada. The only thing it does is &lt;strong>waste a lot of CPU time&lt;/strong>.
+It creates a new &lt;code>Error&lt;/code> object and a new stack trace - a costly thing to do - and then lets the GC throw it away.&lt;/p>
+&lt;p>This is a a case of &lt;strong>&lt;a href="https://en.wikipedia.org/wiki/Cargo_cult_programming">cargo cult programming&lt;/a>&lt;/strong>:&lt;/p>
+&lt;blockquote>
+&lt;p>Cargo cult programming is a style of computer programming characterized by the ritual inclusion of code or program structures that serve no real purpose.&lt;/p>
+&lt;/blockquote>
+&lt;p>I don&amp;rsquo;t want to hate on Axios through, a ton of popular libraries do this! I&amp;rsquo;ve &lt;code>grep&lt;/code>ed through my &lt;code>node_modules&lt;/code> folder and
+found it in &lt;a href="https://github.com/ReactiveX/rxjs/blob/6e3e5e49cb735289a8e8796dc58e682468a36028/src/internal/util/createErrorClass.ts">rxjs&lt;/a>
+and &lt;a href="https://github.com/auth0/node-jsonwebtoken/blob/a99fd4b473e257c2f50ff69c716db1c520bf9a78/lib/JsonWebTokenError.js">jsonwebtoken&lt;/a>.&lt;/p>
+&lt;p>&lt;a href="https://sourcegraph.com/search?q=context:global+%28language:JavaScript+OR+language:TypeScript%29+content:%22Error.call%28this%29%22+count:1000000&amp;amp;patternType=standard&amp;amp;sm=0&amp;amp;groupBy=repo">Sourcegraph finds more than 133K results in over 10k repos&lt;/a>
+for both Typescript and Javascript if you search for &lt;code>Error.call(this)&lt;/code>.&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>&lt;/p>
+&lt;h2 id="cargo-cult-copilot">Cargo Cult Copilot&lt;/h2>
+&lt;p>If Github Copilot is trained on this, will it generate code with &lt;code>Error.call(this)&lt;/code> in it? I&amp;rsquo;ve tried it by typing
+&lt;code>function CachingError&lt;/code> and let it generate from there:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Javascript" data-lang="Javascript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">CachingError&lt;/span>(&lt;span style="color:#a6e22e">message&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;CachingError&amp;#39;&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">message&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">message&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">stack&lt;/span> &lt;span style="color:#f92672">=&lt;/span> (&lt;span style="color:#66d9ef">new&lt;/span> Error()).&lt;span style="color:#a6e22e">stack&lt;/span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This can be done better, but no &lt;code>Error.call(this)&lt;/code>. On my second try I got the following result:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-Javascript" data-lang="Javascript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">CachingError&lt;/span>() {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> Error.&lt;span style="color:#a6e22e">apply&lt;/span>(&lt;span style="color:#66d9ef">this&lt;/span>, &lt;span style="color:#a6e22e">arguments&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>There we are! Using &lt;code>.apply&lt;/code> instead of &lt;code>.call&lt;/code> and passing on the &lt;code>arguments&lt;/code> array would even be a good idea
+if the &lt;code>Error&lt;/code> constructor would do something to it&amp;rsquo;s &lt;code>this&lt;/code>.&lt;/p>
+&lt;h2 id="cargogpt4">CargoGPT4&lt;/h2>
+&lt;p>What about ChatGPT? I&amp;rsquo;ve tried this prompt with GPT4:&lt;/p>
+&lt;style>
+.chat-inner > * {
+margin-block-start: 0;
+}
+&lt;/style>
+&lt;div style="display: flex; gap: 1rem">
+&lt;div style="">Julian:&lt;/div>
+&lt;div style="flex-grow: 1" class="chat-inner">Write me an Error subclass called &lt;code>CachingError&lt;/code> in Javascript using prototypal inheritance.&lt;/div>
+&lt;/div>
+&lt;br>&lt;/br>
+&lt;style>
+.chat-inner > * {
+margin-block-start: 0;
+}
+&lt;/style>
+&lt;div style="display: flex; gap: 1rem">
+&lt;div style="">ChatGPT:&lt;/div>
+&lt;div style="flex-grow: 1" class="chat-inner">&lt;p>Here&amp;rsquo;s an example of a CachingError subclass in JavaScript using prototypal inheritance:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Define the CachingError constructor
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">function&lt;/span> &lt;span style="color:#a6e22e">CachingError&lt;/span>(&lt;span style="color:#a6e22e">message&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Call the Error constructor with the given message
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> Error.&lt;span style="color:#a6e22e">call&lt;/span>(&lt;span style="color:#66d9ef">this&lt;/span>, &lt;span style="color:#a6e22e">message&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Set the error name to &amp;#39;CachingError&amp;#39;
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#39;CachingError&amp;#39;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#75715e">// Capture the current stack trace and store it in the error object
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> Error.&lt;span style="color:#a6e22e">captureStackTrace&lt;/span>(&lt;span style="color:#66d9ef">this&lt;/span>, &lt;span style="color:#a6e22e">CachingError&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Set up the prototype chain between CachingError and Error
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#a6e22e">CachingError&lt;/span>.&lt;span style="color:#a6e22e">prototype&lt;/span> &lt;span style="color:#f92672">=&lt;/span> Object.&lt;span style="color:#a6e22e">create&lt;/span>(Error.&lt;span style="color:#a6e22e">prototype&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#a6e22e">CachingError&lt;/span>.&lt;span style="color:#a6e22e">prototype&lt;/span>.&lt;span style="color:#a6e22e">constructor&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#a6e22e">CachingError&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">// Example usage
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>&lt;span style="color:#66d9ef">try&lt;/span> {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">throw&lt;/span> &lt;span style="color:#66d9ef">new&lt;/span> &lt;span style="color:#a6e22e">CachingError&lt;/span>(&lt;span style="color:#e6db74">&amp;#39;An error occurred while caching data&amp;#39;&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>} &lt;span style="color:#66d9ef">catch&lt;/span> (&lt;span style="color:#a6e22e">error&lt;/span>) {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">console&lt;/span>.&lt;span style="color:#a6e22e">error&lt;/span>(&lt;span style="color:#a6e22e">error&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span>); &lt;span style="color:#75715e">// CachingError
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#a6e22e">console&lt;/span>.&lt;span style="color:#a6e22e">error&lt;/span>(&lt;span style="color:#a6e22e">error&lt;/span>.&lt;span style="color:#a6e22e">message&lt;/span>); &lt;span style="color:#75715e">// An error occurred while caching data
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span> &lt;span style="color:#a6e22e">console&lt;/span>.&lt;span style="color:#a6e22e">error&lt;/span>(&lt;span style="color:#a6e22e">error&lt;/span>.&lt;span style="color:#a6e22e">stack&lt;/span>); &lt;span style="color:#75715e">// Stack trace
+&lt;/span>&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>&lt;span style="color:#75715e">&lt;/span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;/div>
+&lt;/div>
+&lt;br>&lt;/br>
+&lt;p>On the first try!&lt;/p>
+&lt;h2 id="loras-to-the-rescue">LoRas to the Rescue!&lt;/h2>
+&lt;p>The central problem with AI code generation is &lt;a href="https://en.wikipedia.org/wiki/Sturgeon%27s_law">Sturgeon&amp;rsquo;s law&lt;/a>:&lt;/p>
+&lt;blockquote>
+&lt;p>Sturgeon&amp;rsquo;s law (or Sturgeon&amp;rsquo;s revelation) is an adage stating &amp;ldquo;ninety percent of everything is crap&amp;rdquo;.&lt;/p>
+&lt;/blockquote>
+&lt;p>90% of code is crap. That means instead of having gigantic models trained on everything that people
+can get their hands on, use smaller models and train with better code. In the Stable Diffusion community, people train
+&lt;a href="https://arxiv.org/abs/2208.01618">textual inversions&lt;/a> with 5 images and &lt;a href="https://arxiv.org/abs/2106.09685">LoRas&lt;/a> with ~20.
+There needs to be a &amp;ldquo;Javascript Error LoRa&amp;rdquo; in ChatGPT and Copilot that fixes this.&lt;/p>
+&lt;h2 id="how-to-do-it-properly">How to Do It Properly&lt;/h2>
+&lt;p>If you want to create a subclass of &lt;code>Error&lt;/code> use &lt;code>class&lt;/code> syntax:&lt;/p>
+&lt;div class="highlight">&lt;pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;">&lt;code class="language-JavaScript" data-lang="JavaScript">&lt;span style="display:flex;">&lt;span>&lt;span style="color:#66d9ef">class&lt;/span> &lt;span style="color:#a6e22e">MyError&lt;/span> &lt;span style="color:#66d9ef">extends&lt;/span> Error {
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#a6e22e">constructor&lt;/span>(){
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">super&lt;/span>(...&lt;span style="color:#a6e22e">arguments&lt;/span>);
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> &lt;span style="color:#66d9ef">this&lt;/span>.&lt;span style="color:#a6e22e">name&lt;/span> &lt;span style="color:#f92672">=&lt;/span> &lt;span style="color:#e6db74">&amp;#34;MyError&amp;#34;&lt;/span>;
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span> }
+&lt;/span>&lt;/span>&lt;span style="display:flex;">&lt;span>}
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/div>&lt;p>This way, your error will be a &lt;a href="https://nodejs.org/dist/latest-v20.x/docs/api/util.html#utiltypesisnativeerrorvalue">native error&lt;/a>, &lt;code>instanceof Error&lt;/code> and have a &lt;code>.name&lt;/code> property that differentiates it from other errors.&lt;/p>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>I&amp;rsquo;m sure there are a lot for false positives and false negatives (&lt;code>Error.apply&lt;/code>&amp;hellip;) in this search, but you get the idea.&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></content></item><item><title>String Representations of Javascript Objects</title><link>https://juliand.ax/posts/javascript-to-string/</link><pubDate>Sat, 01 Apr 2023 00:35:30 +0200</pubDate><guid>https://juliand.ax/posts/javascript-to-string/</guid><description>toString() and Symbol.toStringTag The default Object.prototype.toString() function is defined to the specification to return [object X] even for non-objects:
 Object.prototype.toString.call(undefined) // returns &amp;#34;[object Undefined]&amp;#34; Object.prototype.toString.call(true) // returns &amp;#34;[object Boolean]&amp;#34; {}.toString() // returns &amp;#34;[object Object]&amp;#34; X is a so-called &amp;lsquo;string tag&amp;rsquo; and in newer versions of Javascipt, you can set it yourself:
 {[Symbol.toStringTag]:&amp;#34;MyObject&amp;#34;}.toString() // returns &amp;#34;[object MyObject]&amp;#34; But for objects, you can also just implement the complete toString function:
 {toString: ()=&amp;gt; &amp;#34;My Cool Object!</description><content>&lt;h2 id="tostring-and-symboltostringtag">&lt;code>toString()&lt;/code> and &lt;code>Symbol.toStringTag&lt;/code>&lt;/h2>
