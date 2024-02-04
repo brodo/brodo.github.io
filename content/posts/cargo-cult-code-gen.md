@@ -42,8 +42,7 @@ This is a a case of **[cargo cult programming](https://en.wikipedia.org/wiki/Car
 
 
 I don't want to hate on Axios through, a ton of popular libraries do this! I've `grep`ed through my `node_modules` folder and
-found it in [rxjs](https://github.com/ReactiveX/rxjs/blob/6e3e5e49cb735289a8e8796dc58e682468a36028/src/internal/util/createErrorClass.ts)
-,[jsonwebtoken](https://github.com/auth0/node-jsonwebtoken/blob/a99fd4b473e257c2f50ff69c716db1c520bf9a78/lib/JsonWebTokenError.js), [nock](https://github.com/nock/nock/blob/76a8df2562536a583c60872665172cc4d965994b/lib/intercept.js#L24) and [js-yaml](https://github.com/nodeca/js-yaml/blob/0d3ca7a27b03a6c974790a30a89e456007d62976/lib/exception.js#L27) (which comes bundled with Node.js).
+found it in [rxjs](https://github.com/ReactiveX/rxjs/blob/6e3e5e49cb735289a8e8796dc58e682468a36028/src/internal/util/createErrorClass.ts), [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken/blob/a99fd4b473e257c2f50ff69c716db1c520bf9a78/lib/JsonWebTokenError.js), [nock](https://github.com/nock/nock/blob/76a8df2562536a583c60872665172cc4d965994b/lib/intercept.js#L24) and [js-yaml](https://github.com/nodeca/js-yaml/blob/0d3ca7a27b03a6c974790a30a89e456007d62976/lib/exception.js#L27) (which comes bundled with Node.js).
 
 [Sourcegraph finds more than 133K results in over 10k repos](https://sourcegraph.com/search?q=context:global+%28language:JavaScript+OR+language:TypeScript%29+content:%22Error.call%28this%29%22+count:1000000&patternType=standard&sm=0&groupBy=repo)
 for both Typescript and Javascript if you search for `Error.call(this)`.[^1]
